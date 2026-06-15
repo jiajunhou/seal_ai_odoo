@@ -1,0 +1,53 @@
+# ─── Python ───────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+*.egg
+.Python
+
+# ─── Virtual Environment ──────────────────────────────
+venv/
+.venv/
+env/
+.env/
+
+# ─── Odoo - 敏感配置 ──────────────────────────────────
+# odoo.conf 包含数据库密码等敏感信息，绝对不能提交
+odoo.conf
+*.conf
+
+# ─── IDE / Editor ─────────────────────────────────────
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── Odoo Source (独立仓库，忽略) ──────────────────
+odoo/
+
+# ─── Logs & Temp ──────────────────────────────────────
+*.log
+*.tmp
+*.temp
+logs/
+tmp/
+
+# ─── AI 临时 / 测试文件 ──────────────────────────────
+check_dep.py
+*.bak
+
+# ─── OS ───────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ─── Database ─────────────────────────────────────────
+*.sql
+*.sqlite
+pg_*

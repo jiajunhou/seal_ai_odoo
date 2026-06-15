@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ai_chunk_tree" model="ir.ui.view">
+        <field name="name">ai.chunk.tree</field>
+        <field name="model">ai.chunk</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="sequence" string="#"/>
+                <field name="name"/>
+                <field name="document_name"/>
+                <field name="content_length" string="Length"/>
+                <field name="token_count" string="Tokens (est.)"/>
+                <field name="has_embedding" widget="boolean_fa"/>
+                <field name="page_number" string="Page"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_ai_chunk_form" model="ir.ui.view">
+        <field name="name">ai.chunk.form</field>
+        <field name="model">ai.chunk</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <field name="document_id"/>
+                        <field name="sequence"/>
+                        <field name="page_number"/>
+                        <field name="token_count"/>
+                        <field name="has_embedding"/>
+                    </group>
+                    <group string="Content">
+                        <field name="content" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_ai_chunk_search" model="ir.ui.view">
+        <field name="name">ai.chunk.search</field>
+        <field name="model">ai.chunk</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="content"/>
+                <field name="document_id"/>
+                <filter name="has_embedding" string="Has Embedding" domain="[('has_embedding','=',True)]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter name="group_document" string="Document" context="{'group_by': 'document_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_ai_chunk" model="ir.actions.act_window">
+        <field name="name">Chunks</field>
+        <field name="res_model">ai.chunk</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

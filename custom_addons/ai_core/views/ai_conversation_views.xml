@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Conversation Tree View -->
+    <record id="view_ai_conversation_tree" model="ir.ui.view">
+        <field name="name">ai.conversation.tree</field>
+        <field name="model">ai.conversation</field>
+        <field name="arch" type="xml">
+            <tree decoration-success="state == 'active'" decoration-muted="state == 'archived'">
+                <field name="name" string="Subject"/>
+                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-muted="state == 'archived'"/>
+                <field name="model_name" string="Model"/>
+                <field name="message_count" string="Messages"/>
+                <field name="total_tokens_used" string="Tokens"/>
+                <field name="last_message_date" string="Last Message"/>
+                <field name="user_id" string="User" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Conversation Form View -->
+    <record id="view_ai_conversation_form" model="ir.ui.view">
+        <field name="name">ai.conversation.form</field>
+        <field name="model">ai.conversation</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_archive" string="Archive" type="object" states="active"/>
+                    <button name="action_unarchive" string="Unarchive" type="object" states="archived"/>
+                    <button name="action_close" string="Close" type="object" states="active,archived"/>
+                    <button name="action_clear_messages" string="Clear Messages" type="object"
+                            confirm="Delete all messages in this conversation?"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" placeholder="Conversation Subject"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="state" widget="badge"/>
+                            <field name="user_id"/>
+                            <field name="model_name"/>
+                        </group>
+                        <group>
+                            <field name="temperature" widget="float"/>
+                            <field name="max_tokens"/>
+                            <field name="message_count" string="Total Messages"/>
+                            <field name="total_tokens_used" string="Tokens Used"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page name="context" string="Context Settings">
+                            <group name="rag_settings" string="RAG Settings">
+                                <field name="use_rag"/>
+                                <field name="use_crm_context"/>
+                                <field name="top_k_chunks"/>
+                                <field name="similarity_threshold"/>
+                            </group>
+                            <group name="crm_context" string="CRM Context">
+                                <field name="partner_ids" widget="many2many_tags"/>
+                                <field name="sale_order_ids" widget="many2many_tags"/>
+                            </group>
+                            <group name="knowledge" string="Knowledge Base">
+                                <field name="document_ids" widget="many2many_tags"/>
+                            </group>
+                        </page>
+
+                        <page name="system" string="System Prompt">
+                            <field name="system_prompt" nolabel="1"/>
+                        </page>
+
+                        <page name="messages" string="Messages">
+                            <field name="message_ids" nolabel="1">
+                                <tree>
+                                    <field name="role" widget="badge" decoration-primary="role == 'user'"
+                                           decoration-success="role == 'assistant'" decoration-info="role == 'system'"/>
+                                    <field name="content" string="Message"/>
+                                    <field name="model_name" string="Model"/>
+                                    <field name="tokens_used" string="Tokens"/>
+                                    <field name="response_time_ms" string="Time (ms)"/>
+                                    <field name="rag_context_used" widget="boolean_fa"/>
+                                    <field name="crm_context_used" widget="boolean_fa"/>
+                                    <field name="create_date" string="Time"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Conversation Search View -->
+    <record id="view_ai_conversation_search" model="ir.ui.view">
+        <field name="name">ai.conversation.search</field>
+        <field name="model">ai.conversation</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="model_name"/>
+                <field name="partner_ids"/>
+                <field name="sale_order_ids"/>
+                <filter name="state_active" string="Active" domain="[('state','=','active')]"/>
+                <filter name="state_archived" string="Archived" domain="[('state','=','archived')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_model" string="Model" context="{'group_by': 'model_name'}"/>
+                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Chat Widget View (embedded in form) -->
+    <record id="view_ai_conversation_chat_widget" model="ir.ui.view">
+        <field name="name">ai.conversation.chat.widget</field>
+        <field name="model">ai.conversation</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <field name="model_name"/>
+                        <field name="temperature"/>
+                    </group>
+                    <div class="ai-chat-container">
+                        <div class="ai-chat-messages">
+                            <field name="message_ids" nolabel="1">
+                                <tree>
+                                    <field name="role"/>
+                                    <field name="content"/>
+                                </tree>
+                            </field>
+                        </div>
+                        <div class="ai-chat-input">
+                            <input type="text" placeholder="Type your message here..."/>
+                            <button string="Send" type="object" name="action_send_message"/>
+                        </div>
+                    </div>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_ai_conversation" model="ir.actions.act_window">
+        <field name="name">AI Chat Conversations</field>
+        <field name="res_model">ai.conversation</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Start a new AI-powered conversation.
+            </p>
+            <p>
+                Use AI chat to ask questions about your CRM data and knowledge base documents.
+                Conversations can include context from customers, sales orders, and uploaded documents.
+            </p>
+        </field>
+    </record>
+</odoo>

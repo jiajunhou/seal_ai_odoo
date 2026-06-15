@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Top-level AI Menu -->
+    <menuitem id="menu_ai_core_root" name="AI"
+              sequence="90"
+              web_icon="ai_core,static/description/icon.png"
+              groups="base.group_user"/>
+
+    <!-- Documents Submenu -->
+    <menuitem id="menu_ai_documents" name="Documents"
+              parent="menu_ai_core_root"
+              sequence="10"
+              action="action_ai_document"
+              groups="base.group_user"/>
+
+    <!-- Knowledge Management -->
+    <menuitem id="menu_ai_knowledge" name="Knowledge"
+              parent="menu_ai_core_root"
+              sequence="20"/>
+
+    <menuitem id="menu_ai_chunks" name="Chunks"
+              parent="menu_ai_knowledge"
+              sequence="10"
+              action="action_ai_chunk"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_ai_embeddings" name="Embeddings"
+              parent="menu_ai_knowledge"
+              sequence="20"
+              action="action_ai_embedding"
+              groups="base.group_system"/>
+
+    <menuitem id="menu_ai_vector_indexes" name="Vector Indexes"
+              parent="menu_ai_knowledge"
+              sequence="30"
+              action="action_ai_vector_index"
+              groups="group_ai_manager"/>
+
+    <!-- Chat Submenu -->
+    <menuitem id="menu_ai_chat" name="Chat"
+              parent="menu_ai_core_root"
+              sequence="30"
+              action="action_ai_conversation"
+              groups="base.group_user"/>
+
+    <!-- Configuration Submenu -->
+    <menuitem id="menu_ai_configuration" name="Configuration"
+              parent="menu_ai_core_root"
+              sequence="90"
+              groups="base.group_system"/>
+
+    <menuitem id="menu_ai_settings" name="Settings"
+              parent="menu_ai_configuration"
+              sequence="10"
+              action="action_ai_config_settings"/>
+</odoo>

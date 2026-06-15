@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_ai_vector_index_tree" model="ir.ui.view">
+        <field name="name">ai.vector.index.tree</field>
+        <field name="model">ai.vector.index</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="index_type"/>
+                <field name="distance_metric"/>
+                <field name="dimensions"/>
+                <field name="model_name"/>
+                <field name="document_count"/>
+                <field name="embedding_count"/>
+                <field name="active" widget="boolean_fa"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_ai_vector_index_form" model="ir.ui.view">
+        <field name="name">ai.vector.index.form</field>
+        <field name="model">ai.vector.index</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_rebuild_index" string="Rebuild Index" type="object"
+                            confirm="This will delete all embeddings and re-process all documents. Continue?"/>
+                    <button name="action_clear_index" string="Clear Index" type="object"
+                            confirm="Remove all embeddings from this index?"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_index_statistics" string="Statistics" type="object"
+                                class="oe_stat_button" icon="fa-bar-chart"/>
+                    </div>
+                    <div class="oe_title">
+                        <h1><field name="name"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="index_type"/>
+                            <field name="distance_metric"/>
+                            <field name="dimensions"/>
+                            <field name="model_name"/>
+                        </group>
+                        <group>
+                            <field name="document_count"/>
+                            <field name="embedding_count"/>
+                            <field name="total_chunks"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_ai_vector_index" model="ir.actions.act_window">
+        <field name="name">Vector Indexes</field>
+        <field name="res_model">ai.vector.index</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

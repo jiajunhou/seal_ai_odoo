@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="AiChatWidget" name="AI Chat Widget">
+        <div class="ai-chat-container">
+            <div class="ai-chat-messages" t-ref="messagesContainer">
+                <t t-if="!state.messages.length">
+                    <div class="ai-chat-empty">
+                        <div class="icon">🤖</div>
+                        <div class="title">AI Assistant</div>
+                        <div class="subtitle">
+                            Ask me anything about your CRM data, documents, or business operations.
+                        </div>
+                    </div>
+                </t>
+                <t t-else="">
+                    <t t-foreach="state.messages" t-as="msg" t-key="msg_index">
+                        <div t-att-class="'ai-chat-message ' + msg.role">
+                            <div t-att-class="'message-content' + (msg.isError ? ' ai-chat-error' : '')">
+                                <t t-esc="msg.content"/>
+                            </div>
+                            <div class="message-meta">
+                                <span t-if="msg.model" t-esc="msg.model"/>
+                                <span t-if="msg.tokens"> · <t t-esc="msg.tokens"/> tokens</span>
+                                <span t-if="msg.timestamp"> · <t t-esc="formatTimestamp(msg.timestamp)"/></span>
+                            </div>
+                            <t t-if="msg.ragContext and msg.ragContext.length">
+                                <div class="rag-sources">
+                                    <t t-foreach="msg.ragContext" t-as="source" t-key="source_index">
+                                        <div class="rag-source">
+                                            <strong>Source:</strong> <t t-esc="source.document"/>
+                                            <span class="badge"><t t-esc="(source.score * 100).toFixed(0)"/>% match</span>
+                                            <p t-esc="source.content"/>
+                                        </div>
+                                    </t>
+                                </div>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+                <t t-if="state.loading">
+                    <div class="ai-chat-loading">
+                        <div class="spinner"/>
+                        <span style="margin-left: 12px;">Thinking...</span>
+                    </div>
+                </t>
+            </div>
+            <div class="ai-chat-input">
+                <input type="text"
+                       t-ref="chatInput"
+                       t-model="state.inputText"
+                       t-on-keydown="handleKeyPress"
+                       placeholder="Type your message here..."
+                       t-att-disabled="state.loading"/>
+                <button t-on-click="sendMessage"
+                        t-att-disabled="state.loading || !state.inputText.trim()">
+                    Send
+                </button>
+            </div>
+        </div>
+    </template>
+</odoo>

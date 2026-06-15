@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Tree View -->
+    <record id="view_ai_document_tree" model="ir.ui.view">
+        <field name="name">ai.document.tree</field>
+        <field name="model">ai.document</field>
+        <field name="arch" type="xml">
+            <tree decoration-danger="state == 'error'" decoration-success="state == 'ready'" decoration-info="state == 'uploaded'">
+                <field name="name" string="Document Name"/>
+                <field name="document_type" widget="badge" decoration-info="1"/>
+                <field name="state" widget="badge" decoration-info="state in ('draft','uploaded')" decoration-success="state == 'ready'" decoration-warning="state in ('parsing','chunking','embedding')" decoration-danger="state == 'error'"/>
+                <field name="datas_fname" string="Filename" optional="show"/>
+                <field name="file_size" string="Size" widget="integer" optional="hide"/>
+                <field name="page_count" string="Pages" optional="hide"/>
+                <field name="word_count" string="Words" optional="hide"/>
+                <field name="chunk_count" string="Chunks" optional="show"/>
+                <field name="embedding_count" string="Embeddings" optional="show"/>
+                <field name="user_id" string="Uploaded By" optional="hide"/>
+                <field name="create_date" string="Created" optional="hide"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Form View -->
+    <record id="view_ai_document_form" model="ir.ui.view">
+        <field name="name">ai.document.form</field>
+        <field name="model">ai.document</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,parsing,chunking,embedding,ready"/>
+                    <button name="action_process" string="Process" type="object"
+                            states="uploaded" class="btn-primary"
+                            confirm="Process this document? This will parse, chunk, and generate embeddings."/>
+                    <button name="action_reprocess" string="Reprocess" type="object"
+                            states="ready,error" class="btn-warning"/>
+                    <button name="action_reset" string="Reset" type="object"
+                            states="uploaded,parsed,chunked,ready,error" class="btn-secondary"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_chunks" string="Chunks" type="object"
+                                class="oe_stat_button" icon="fa-file-text-o">
+                            <field name="chunk_count" widget="statinfo"/>
+                        </button>
+                        <button name="action_view_embeddings" string="Embeddings" type="object"
+                                class="oe_stat_button" icon="fa-database">
+                            <field name="embedding_count" widget="statinfo"/>
+                        </button>
+                    </div>
+                    <div class="oe_title">
+                        <h1>
+                            <field name="name" placeholder="Document Name"/>
+                        </h1>
+                        <group>
+                            <group>
+                                <field name="document_type" widget="badge"/>
+                                <field name="state" widget="badge"/>
+                                <field name="datas_fname" string="Filename"/>
+                            </group>
+                            <group>
+                                <field name="user_id"/>
+                                <field name="create_date"/>
+                            </group>
+                        </group>
+                    </div>
+
+                    <notebook>
+                        <page name="file" string="File">
+                            <group name="file_info">
+                                <field name="datas" filename="datas_fname" string="File">
+                                    <tree>
+                                        <field name="datas_fname"/>
+                                    </tree>
+                                </field>
+                                <field name="file_size" string="Size"/>
+                                <field name="mime_type"/>
+                                <field name="file_extension"/>
+                            </group>
+                        </page>
+
+                        <page name="processing" string="Processing">
+                            <group name="config" string="Configuration">
+                                <group>
+                                    <field name="chunk_strategy"/>
+                                    <field name="chunk_size"/>
+                                    <field name="chunk_overlap"/>
+                                </group>
+                                <group>
+                                    <field name="embedding_model"/>
+                                    <field name="embedding_dimensions"/>
+                                    <field name="vector_index_id"/>
+                                </group>
+                            </group>
+                            <group name="stats" string="Statistics" attrs="{'invisible': [('state', 'not in', ('ready','error'))]}">
+                                <group>
+                                    <field name="page_count"/>
+                                    <field name="word_count"/>
+                                    <field name="character_count"/>
+                                </group>
+                                <group>
+                                    <field name="chunk_count"/>
+                                    <field name="embedding_count"/>
+                                    <field name="process_duration" string="Processing Time (s)"/>
+                                    <field name="processed_date"/>
+                                </group>
+                            </group>
+                            <group name="error" string="Error" attrs="{'invisible': [('state', '!=', 'error')]}">
+                                <field name="error_message" nolabel="1"/>
+                            </group>
+                        </page>
+
+                        <page name="content" string="Content">
+                            <field name="raw_text" nolabel="1" readonly="True"/>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_ids" widget="mail_thread"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <!-- Search View -->
+    <record id="view_ai_document_search" model="ir.ui.view">
+        <field name="name">ai.document.search</field>
+        <field name="model">ai.document</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name" string="Document Name"/>
+                <field name="datas_fname" string="Filename"/>
+                <field name="raw_text" string="Content"/>
+                <filter name="state_ready" string="Ready" domain="[('state','=','ready')]"/>
+                <filter name="state_error" string="Error" domain="[('state','=','error')]"/>
+                <filter name="state_uploaded" string="Uploaded" domain="[('state','=','uploaded')]"/>
+                <filter name="state_draft" string="Draft" domain="[('state','=','draft')]"/>
+                <separator/>
+                <filter name="type_pdf" string="PDF" domain="[('document_type','=','pdf')]"/>
+                <filter name="type_docx" string="DOCX" domain="[('document_type','=','docx')]"/>
+                <filter name="type_txt" string="TXT" domain="[('document_type','=','txt')]"/>
+                <separator/>
+                <group expand="0" string="Group By">
+                    <filter name="group_type" string="Document Type" context="{'group_by': 'document_type'}"/>
+                    <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
+                    <filter name="group_user" string="Uploaded By" context="{'group_by': 'user_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <!-- Action -->
+    <record id="action_ai_document" model="ir.actions.act_window">
+        <field name="name">Documents</field>
+        <field name="res_model">ai.document</field>
+        <field name="view_mode">tree,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Upload your first document for AI processing.
+            </p>
+            <p>
+                Upload PDF, DOCX, or TXT files to build a searchable knowledge base.
+                Documents are automatically parsed, chunked, and embedded for AI retrieval.
+            </p>
+        </field>
+    </record>
+</odoo>

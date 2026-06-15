@@ -1,0 +1,24 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# Python
+*.py text diff=python
+*.pyx text
+*.pxd text
+
+# XML
+*.xml text
+
+# CSV
+*.csv text
+
+# Config files
+*.cfg text
+*.ini text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.docx binary

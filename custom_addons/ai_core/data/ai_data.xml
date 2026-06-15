@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Default Vector Index -->
+    <record id="vector_index_default" model="ai.vector.index">
+        <field name="name">Default OpenAI Ada Index</field>
+        <field name="index_type">flat</field>
+        <field name="distance_metric">cosine</field>
+        <field name="dimensions">1536</field>
+        <field name="model_name">text-embedding-ada-002</field>
+        <field name="active">True</field>
+    </record>
+
+    <!-- System Parameters -->
+    <record id="ai_core_chat_backend" model="ir.config_parameter">
+        <field name="key">ai_core.chat_backend</field>
+        <field name="value">mock</field>
+    </record>
+
+    <record id="ai_core_chat_model" model="ir.config_parameter">
+        <field name="key">ai_core.chat_model</field>
+        <field name="value">gpt-4o-mini</field>
+    </record>
+
+    <record id="ai_core_embedding_backend" model="ir.config_parameter">
+        <field name="key">ai_core.embedding_backend</field>
+        <field name="value">mock</field>
+    </record>
+
+    <record id="ai_core_embedding_model" model="ir.config_parameter">
+        <field name="key">ai_core.embedding_model</field>
+        <field name="value">text-embedding-ada-002</field>
+    </record>
+
+    <record id="ai_core_embedding_dimensions" model="ir.config_parameter">
+        <field name="key">ai_core.embedding_dimensions</field>
+        <field name="value">1536</field>
+    </record>
+</odoo>
