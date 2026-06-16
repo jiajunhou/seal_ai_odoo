@@ -22,7 +22,7 @@ class AiEmbedding(models.Model):
     # ---- Core Fields ----
     name = fields.Char(string='Name', compute='_compute_name', store=True)
     vector = fields.Binary(string='Embedding Vector (Binary)', readonly=True)
-    vector_dimensions = fields.Integer(string='Vector Dimensions', default=1536, required=True)
+    vector_dimensions = fields.Integer(string='向量维度', default=1536, required=True)
 
     # JSON representation for display/debug
     vector_json = fields.Text(string='Vector (JSON)', compute='_compute_vector_json', readonly=True)
@@ -44,7 +44,7 @@ class AiEmbedding(models.Model):
     )
     vector_index_id = fields.Many2one(
         'ai.vector.index',
-        string='Vector Index',
+        string='向量索引',
         ondelete='cascade',
         index=True,
     )

@@ -14,18 +14,18 @@ class AiConversation(models.Model):
     """Represents an AI chat conversation with context from CRM and documents."""
 
     _name = 'ai.conversation'
-    _description = 'AI Conversation'
+    _description = 'AI对话'
     _order = 'write_date DESC'
     _inherit = ['mail.thread', 'mail.activity.mixin']
 
     # ---- Core Fields ----
-    name = fields.Char(string='Subject', required=True, default='New Conversation')
+    name = fields.Char(string='主题', required=True, default='New Conversation')
     state = fields.Selection(
-        string='Status',
+        string='状态',
         selection=[
-            ('active', 'Active'),
-            ('archived', 'Archived'),
-            ('closed', 'Closed'),
+            ('active', '活跃'),
+            ('archived', '已归档'),
+            ('closed', '已关闭'),
         ],
         default='active',
         required=True,
@@ -38,11 +38,11 @@ class AiConversation(models.Model):
         default='gpt-4o-mini',
         help='The AI model used for chat completion',
     )
-    temperature = fields.Float(string='Temperature', default=0.7, help='Response creativity (0-1)')
-    max_tokens = fields.Integer(string='Max Tokens', default=2048, help='Maximum response length')
+    temperature = fields.Float(string='温度参数', default=0.7, help='Response creativity (0-1)')
+    max_tokens = fields.Integer(string='最大Token数', default=2048, help='Maximum response length')
     system_prompt = fields.Text(
-        string='System Prompt',
-        default="""You are an AI assistant integrated with Odoo ERP. You have access to CRM data including customers (res.partner) and sales orders (sale.order). 
+        string='系统提示词',
+        default="""You are an AI assistant integrated with Odoo ERP. You have access to CRM data including customers (res.partner) and sales orders (sale.order).
 Use the provided context to answer questions accurately. When referencing specific data, mention the source.
 Always be professional, helpful, and concise.""",
         translate=True,
@@ -50,44 +50,44 @@ Always be professional, helpful, and concise.""",
 
     # ---- Context Configuration ----
     use_rag = fields.Boolean(string='Use RAG Context', default=True, help='Retrieve relevant document chunks')
-    use_crm_context = fields.Boolean(string='Use CRM Context', default=True, help='Include CRM data in context')
-    top_k_chunks = fields.Integer(string='Top K Chunks', default=5, help='Number of relevant chunks to retrieve')
-    similarity_threshold = fields.Float(string='Similarity Threshold', default=0.6, help='Minimum similarity score')
+    use_crm_context = fields.Boolean(string='启用CRM上下文', default=True, help='Include CRM data in context')
+    top_k_chunks = fields.Integer(string='Top K块数', default=5, help='Number of relevant chunks to retrieve')
+    similarity_threshold = fields.Float(string='相似度阈值', default=0.6, help='Minimum similarity score')
 
     # ---- Relations ----
-    message_ids = fields.One2many('ai.conversation.message', 'conversation_id', string='Messages')
-    message_count = fields.Integer(string='Message Count', compute='_compute_message_count', store=True)
-    user_id = fields.Many2one('res.users', string='User', default=lambda self: self.env.user, required=True)
-    company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.company)
+    chat_message_ids = fields.One2many('ai.conversation.message', 'conversation_id', string='消息')
+    message_count = fields.Integer(string='消息数', compute='_compute_message_count', store=True)
+    user_id = fields.Many2one('res.users', string='用户', default=lambda self: self.env.user, required=True)
+    company_id = fields.Many2one('res.company', string='公司', default=lambda self: self.env.company)
 
     # ---- CRM Context: Linked Records ----
     partner_ids = fields.Many2many(
         'res.partner',
-        string='Related Partners',
+        string='关联合作伙伴',
         help='Customers/contacts to include in AI context',
     )
     sale_order_ids = fields.Many2many(
         'sale.order',
-        string='Related Sales Orders',
+        string='关联销售订单',
         help='Sales orders to include in AI context',
     )
     document_ids = fields.Many2many(
         'ai.document',
-        string='Knowledge Base Documents',
+        string='知识库文档',
         help='Documents to search for RAG',
     )
 
     # ---- Statistics ----
-    total_tokens_used = fields.Integer(string='Total Tokens Used', default=0)
-    total_messages = fields.Integer(string='Total Messages', default=0)
-    last_message_date = fields.Datetime(string='Last Message Date', readonly=True)
+    total_tokens_used = fields.Integer(string='已用Token数', default=0)
+    total_messages = fields.Integer(string='总消息数', default=0)
+    last_message_date = fields.Datetime(string='最后消息时间', readonly=True)
 
     # ---- Computed ----
 
-    @api.depends('message_ids')
+    @api.depends('chat_message_ids')
     def _compute_message_count(self):
         for record in self:
-            record.message_count = len(record.message_ids)
+            record.message_count = len(record.chat_message_ids)
 
     # ---- Actions ----
 
@@ -102,7 +102,7 @@ Always be professional, helpful, and concise.""",
 
     def action_clear_messages(self):
         """Clear all messages but keep the conversation."""
-        self.message_ids.unlink()
+        self.chat_message_ids.unlink()
         self.write({
             'total_tokens_used': 0,
             'total_messages': 0,
@@ -125,7 +125,7 @@ Always be professional, helpful, and concise.""",
     def send_message(self, content, use_rag=None, use_crm_context=None):
         """
         Send a user message and get AI response.
-        
+
         :param content: The user's message text
         :param use_rag: Override RAG setting
         :param use_crm_context: Override CRM context setting
@@ -218,7 +218,6 @@ Always be professional, helpful, and concise.""",
         # Get partners
         partners = self.partner_ids
         if not partners:
-            # If no specific partners linked, get recent ones
             partners = self.env['res.partner'].search([
                 ('active', '=', True),
             ], limit=10)
@@ -238,7 +237,6 @@ Always be professional, helpful, and concise.""",
         # Get sales orders
         sale_orders = self.sale_order_ids
         if not sale_orders:
-            # If no specific orders linked, get recent ones
             sale_orders = self.env['sale.order'].search([
                 ('company_id', '=', self.env.company.id),
             ], limit=10, order='date_order DESC')
@@ -274,7 +272,7 @@ class AiConversationMessage(models.Model):
         index=True,
     )
     role = fields.Selection(
-        string='Role',
+        string='角色',
         selection=[
             ('system', 'System'),
             ('user', 'User'),
@@ -287,13 +285,13 @@ class AiConversationMessage(models.Model):
 
     # ---- AI Metadata ----
     model_name = fields.Char(string='Model Used')
-    tokens_used = fields.Integer(string='Tokens Used', default=0)
-    temperature = fields.Float(string='Temperature')
-    response_time_ms = fields.Integer(string='Response Time (ms)')
+    tokens_used = fields.Integer(string='已用Token数', default=0)
+    temperature = fields.Float(string='温度参数')
+    response_time_ms = fields.Integer(string='响应时间(毫秒)')
 
     # ---- Context Information ----
-    rag_context_used = fields.Boolean(string='RAG Context Used', default=False)
-    crm_context_used = fields.Boolean(string='CRM Context Used', default=False)
+    rag_context_used = fields.Boolean(string='已使用RAG上下文', default=False)
+    crm_context_used = fields.Boolean(string='已使用CRM上下文', default=False)
     rag_chunks_retrieved = fields.Integer(string='RAG Chunks Retrieved', default=0)
     metadata_json = fields.Text(string='Response Metadata (JSON)')
 
@@ -313,6 +311,6 @@ class AiConversationMessage(models.Model):
     @api.depends('role', 'content')
     def _compute_display_name(self):
         for record in self:
-            prefix = {'user': '👤', 'assistant': '🤖', 'system': '⚙️'}.get(record.role, '❓')
+            prefix = {'user': 'User', 'assistant': 'AI', 'system': 'System'}.get(record.role, '?')
             preview = record.content[:80] + '...' if record.content and len(record.content) > 80 else (record.content or '')
-            record.display_name = f'{prefix} {preview}'
+            record.display_name = f'{prefix}: {preview}'

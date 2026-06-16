@@ -5,129 +5,116 @@
         <field name="name">AI Configuration Settings</field>
         <field name="model">res.config.settings</field>
         <field name="arch" type="xml">
-            <form class="o_configuration_wizard" string="AI Settings">
+            <form class="o_configuration_wizard" string="AI设置">
+                <header>
+                    <button string="保存" type="object" name="execute" class="btn-primary"/>
+                    <button string="取消" special="cancel" type="object"/>
+                </header>
                 <div class="o_setting_container">
                     <div class="settings">
                         <div class="app-name">
-                            <h2>AI Core Configuration</h2>
+                            <h2>AI核心配置</h2>
                         </div>
 
                         <!-- Chat Backend -->
                         <div class="o_setting_box" id="ai_chat_backend">
                             <div class="o_setting_right_pane">
-                                <label for="ai_chat_backend_select" string="AI Chat Backend"/>
+                                <span class="o_form_label">AI聊天后端</span>
                                 <div class="text-muted">
-                                    Choose the backend for AI chat completions.
-                                </div>
-                                <div class="content-group mt16">
-                                    <select class="o_input o_setting_select" id="ai_chat_backend_select">
-                                        <option value="mock">Mock (Development)</option>
-                                        <option value="openai">OpenAI API</option>
-                                        <option value="openai_compatible">Custom OpenAI-compatible</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- OpenAI Configuration -->
-                        <div class="o_setting_box" id="ai_openai_config">
-                            <div class="o_setting_right_pane">
-                                <label string="OpenAI API Configuration"/>
-                                <div class="text-muted">
-                                    Configure OpenAI API access for chat and embeddings.
+                                    选择AI聊天的后端（DeepSeek / OpenAI / 通义千问）
                                 </div>
                                 <div class="content-group mt16">
                                     <div class="row">
-                                        <label string="API Key" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">后端</span>
                                         <div class="col-lg-9">
-                                            <input type="password" class="o_input" id="ai_openai_api_key"
-                                                   placeholder="sk-..."/>
+                                            <field name="ai_chat_backend" class="o_input"/>
                                         </div>
                                     </div>
                                     <div class="row mt8">
-                                        <label string="Chat Model" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">API密钥</span>
                                         <div class="col-lg-9">
-                                            <input type="text" class="o_input" id="ai_chat_model"
-                                                   value="gpt-4o-mini"/>
+                                            <field name="ai_openai_api_key" password="True" placeholder="sk-..."/>
                                         </div>
                                     </div>
                                     <div class="row mt8">
-                                        <label string="Custom Endpoint" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">聊天模型</span>
                                         <div class="col-lg-9">
-                                            <input type="text" class="o_input" id="ai_custom_endpoint"
-                                                   placeholder="http://localhost:11434/v1/chat/completions"/>
+                                            <field name="ai_chat_model" placeholder="deepseek-chat"/>
+                                            <div class="text-muted small">
+                                                OpenAI: gpt-4o-mini | DeepSeek: deepseek-chat | Qwen: qwen-plus
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt8">
+                                        <span class="o_form_label col-lg-3">自定义端点</span>
+                                        <div class="col-lg-9">
+                                            <field name="ai_custom_endpoint" placeholder="http://localhost:11434/v1/chat/completions"/>
+                                            <div class="text-muted small">
+                                                预设后端自动填入，自定义兼容模式可手动修改
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Embedding Configuration -->
+                        <!-- Embedding Config -->
                         <div class="o_setting_box" id="ai_embedding_config">
                             <div class="o_setting_right_pane">
-                                <label string="Embedding Configuration"/>
+                                <span class="o_form_label">嵌入配置</span>
                                 <div class="text-muted">
-                                    Configure how text chunks are converted to vectors.
+                                    配置文本块如何转换为向量。
                                 </div>
                                 <div class="content-group mt16">
                                     <div class="row">
-                                        <label string="Backend" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">后端</span>
                                         <div class="col-lg-9">
-                                            <select class="o_input" id="ai_embedding_backend">
-                                                <option value="mock">Mock (Development)</option>
-                                                <option value="openai">OpenAI API</option>
-                                            </select>
+                                            <field name="ai_embedding_backend" class="o_input"/>
                                         </div>
                                     </div>
                                     <div class="row mt8">
-                                        <label string="Model" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">模型</span>
                                         <div class="col-lg-9">
-                                            <input type="text" class="o_input" id="ai_embedding_model"
-                                                   value="text-embedding-ada-002"/>
+                                            <field name="ai_embedding_model"/>
+                                            <div class="text-muted small">
+                                                OpenAI: text-embedding-ada-002 | Qwen: text-embedding-v2
+                                            </div>
                                         </div>
                                     </div>
                                     <div class="row mt8">
-                                        <label string="Dimensions" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">维度</span>
                                         <div class="col-lg-9">
-                                            <input type="number" class="o_input" id="ai_embedding_dimensions"
-                                                   value="1536"/>
+                                            <field name="ai_embedding_dimensions"/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Default Chunking -->
+                        <!-- Chunking Defaults -->
                         <div class="o_setting_box" id="ai_chunking_defaults">
                             <div class="o_setting_right_pane">
-                                <label string="Default Chunking Configuration"/>
+                                <span class="o_form_label">默认分块配置</span>
                                 <div class="text-muted">
-                                    Default settings for document chunking.
+                                    文档分块的默认设置。
                                 </div>
                                 <div class="content-group mt16">
                                     <div class="row">
-                                        <label string="Strategy" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">策略</span>
                                         <div class="col-lg-9">
-                                            <select class="o_input" id="ai_default_chunk_strategy">
-                                                <option value="recursive">Recursive Split</option>
-                                                <option value="token">Token-based</option>
-                                                <option value="semantic">Semantic</option>
-                                                <option value="fixed">Fixed Size</option>
-                                            </select>
+                                            <field name="ai_default_chunk_strategy" class="o_input"/>
                                         </div>
                                     </div>
                                     <div class="row mt8">
-                                        <label string="Chunk Size" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">分块大小</span>
                                         <div class="col-lg-9">
-                                            <input type="number" class="o_input" id="ai_default_chunk_size"
-                                                   value="512"/>
+                                            <field name="ai_default_chunk_size"/>
                                         </div>
                                     </div>
                                     <div class="row mt8">
-                                        <label string="Chunk Overlap" class="col-lg-3 o_label"/>
+                                        <span class="o_form_label col-lg-3">分块重叠</span>
                                         <div class="col-lg-9">
-                                            <input type="number" class="o_input" id="ai_default_chunk_overlap"
-                                                   value="50"/>
+                                            <field name="ai_default_chunk_overlap"/>
                                         </div>
                                     </div>
                                 </div>
@@ -139,12 +126,13 @@
         </field>
     </record>
 
-    <!-- Action for Settings -->
+            <!-- Action for Settings -->
     <record id="action_ai_config_settings" model="ir.actions.act_window">
-        <field name="name">AI Settings</field>
+        <field name="name">AI设置</field>
         <field name="res_model">res.config.settings</field>
         <field name="view_mode">form</field>
         <field name="view_id" ref="view_ai_config_settings"/>
         <field name="target">inline</field>
     </record>
+
 </odoo>

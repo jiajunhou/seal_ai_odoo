@@ -46,6 +46,22 @@ class EmbeddingService(models.AbstractModel):
     CONFIG_OPENAI_MODEL = 'ai_core.embedding_model'
     CONFIG_EMBEDDING_DIMENSIONS = 'ai_core.embedding_dimensions'
     CONFIG_EMBEDDING_BACKEND = 'ai_core.embedding_backend'
+    CONFIG_EMBEDDING_ENDPOINT = 'ai_core.embedding_endpoint'
+
+    # Preset endpoints for embedding backends
+    PRESET_ENDPOINTS = {
+        'openai': 'https://api.openai.com/v1/embeddings',
+        'qwen': 'https://dashscope.aliyuncs.com/compatible-mode/v1/embeddings',
+    }
+
+    # Model -> dimensions mapping
+    MODEL_DIMENSIONS = {
+        'text-embedding-ada-002': 1536,
+        'text-embedding-3-small': 1536,
+        'text-embedding-3-large': 3072,
+        'text-embedding-v2': 1536,
+        'text-embedding-v1': 1536,
+    }
 
     # ---- Main API ----
 
@@ -123,29 +139,35 @@ class EmbeddingService(models.AbstractModel):
         self.log_info(f'Using embedding backend: {backend}, model: {model}')
 
         backends = {
-            'openai': self._embed_openai,
+            'openai': self._embed_api,
+            'qwen': self._embed_api,
+            'openai_compatible': self._embed_api,
             'mock': self._embed_mock,
-            'local': self._embed_mock,  # Placeholder for local models
         }
 
         embedder = backends.get(backend, self._embed_mock)
         return embedder(texts, model)
 
-    # ---- OpenAI Backend ----
+    # ---- Universal OpenAI-compatible Embedding Backend ----
+    # Supports: OpenAI, Qwen (DashScope), and any OpenAI-compatible embedding API
 
     @api.model
-    def _embed_openai(self, texts: List[str], model: str) -> List[Optional[List[float]]]:
-        """Generate embeddings using OpenAI API."""
+    def _embed_api(self, texts: List[str], model: str) -> List[Optional[List[float]]]:
+        """Generate embeddings via OpenAI-compatible API."""
         if not _HAS_REQUESTS:
-            self.log_warning('requests library not available. Using mock embeddings.')
+            self.log_warning('requests库不可用，使用模拟嵌入。')
             return self._embed_mock(texts, model)
 
-        api_key = self._get_openai_api_key()
+        api_key = self._get_api_key()
         if not api_key:
-            self.log_warning('OpenAI API key not configured. Using mock embeddings.')
+            self.log_warning('API密钥未配置，使用模拟嵌入。')
             return self._embed_mock(texts, model)
 
-        url = 'https://api.openai.com/v1/embeddings'
+        url = self._get_endpoint()
+        if not url:
+            self.log_warning('端点未配置，使用模拟嵌入。')
+            return self._embed_mock(texts, model)
+
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
@@ -171,13 +193,13 @@ class EmbeddingService(models.AbstractModel):
             return embeddings
 
         except requests.exceptions.Timeout:
-            self.log_error('OpenAI API request timed out')
+            self.log_error('嵌入API请求超时')
             return self._embed_mock(texts, model)
         except requests.exceptions.RequestException as e:
-            self.log_error(f'OpenAI API request failed: {e}')
+            self.log_error(f'嵌入API请求失败: {e}')
             return self._embed_mock(texts, model)
         except (KeyError, ValueError, json.JSONDecodeError) as e:
-            self.log_error(f'Failed to parse OpenAI response: {e}')
+            self.log_error(f'解析嵌入响应失败: {e}')
             return self._embed_mock(texts, model)
 
     # ---- Mock/Testing Backend ----
@@ -260,8 +282,8 @@ class EmbeddingService(models.AbstractModel):
         return param.get_param(self.CONFIG_EMBEDDING_BACKEND, 'mock')
 
     @api.model
-    def _get_openai_api_key(self) -> str:
-        """Get the OpenAI API key from config."""
+    def _get_api_key(self):
+        """Get the API key from config."""
         param = self.env['ir.config_parameter'].sudo()
         return param.get_param(self.CONFIG_OPENAI_API_KEY, '')
 
@@ -272,16 +294,22 @@ class EmbeddingService(models.AbstractModel):
         return param.get_param(self.CONFIG_OPENAI_MODEL, 'text-embedding-ada-002')
 
     @api.model
+    def _get_endpoint(self):
+        """Get the embedding endpoint for the current backend."""
+        backend = self._get_backend()
+        if backend in self.PRESET_ENDPOINTS:
+            return self.PRESET_ENDPOINTS[backend]
+        param = self.env['ir.config_parameter'].sudo()
+        return param.get_param(self.CONFIG_EMBEDDING_ENDPOINT, '')
+
+    @api.model
     def _get_dimensions(self, model: str = '') -> int:
         """Get vector dimensions for a model."""
-        model_dims = {
-            'text-embedding-ada-002': 1536,
-            'text-embedding-3-small': 1536,
-            'text-embedding-3-large': 3072,
-        }
-        dimensions = model_dims.get(model, 1536)
+        if model in self.MODEL_DIMENSIONS:
+            dimensions = self.MODEL_DIMENSIONS[model]
+        else:
+            dimensions = 1536
 
-        # Allow override via config
         param = self.env['ir.config_parameter'].sudo()
         config_dims = param.get_param(self.CONFIG_EMBEDDING_DIMENSIONS, '')
         if config_dims and config_dims.isdigit():
@@ -292,10 +320,10 @@ class EmbeddingService(models.AbstractModel):
     @api.model
     def configure_backend(self, backend='mock', api_key='', model='text-embedding-ada-002', dimensions=1536):
         """
-        Configure the embedding backend through the UI.
+        Configure the embedding backend.
 
-        :param backend: 'openai', 'mock', or 'local'
-        :param api_key: API key for external services
+        :param backend: 'openai', 'qwen', 'mock', or 'openai_compatible'
+        :param api_key: API key
         :param model: model name
         :param dimensions: vector dimensions
         """
@@ -307,5 +335,8 @@ class EmbeddingService(models.AbstractModel):
         if api_key:
             param.set_param(self.CONFIG_OPENAI_API_KEY, api_key)
 
-        self.log_info(f'Configured embedding backend: {backend}, model: {model}')
+        if backend in self.PRESET_ENDPOINTS:
+            param.set_param(self.CONFIG_EMBEDDING_ENDPOINT, self.PRESET_ENDPOINTS[backend])
+
+        self.log_info(f'配置嵌入后端: {backend}, 模型: {model}')
         return True

@@ -7,14 +7,14 @@
               groups="base.group_user"/>
 
     <!-- Documents Submenu -->
-    <menuitem id="menu_ai_documents" name="Documents"
+    <menuitem id="menu_ai_documents" name="文档管理"
               parent="menu_ai_core_root"
               sequence="10"
               action="action_ai_document"
               groups="base.group_user"/>
 
     <!-- Knowledge Management -->
-    <menuitem id="menu_ai_knowledge" name="Knowledge"
+    <menuitem id="menu_ai_knowledge" name="知识库"
               parent="menu_ai_core_root"
               sequence="20"/>
 
@@ -30,27 +30,45 @@
               action="action_ai_embedding"
               groups="base.group_system"/>
 
-    <menuitem id="menu_ai_vector_indexes" name="Vector Indexes"
+    <menuitem id="menu_ai_vector_indexes" name="向量索引"
               parent="menu_ai_knowledge"
               sequence="30"
               action="action_ai_vector_index"
               groups="group_ai_manager"/>
 
-    <!-- Chat Submenu -->
-    <menuitem id="menu_ai_chat" name="Chat"
+        <!-- Chat Submenu -->
+    <menuitem id="menu_ai_chat" name="AI 智能聊天"
               parent="menu_ai_core_root"
               sequence="30"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_ai_chat_interface" name="打开聊天"
+              parent="menu_ai_chat"
+              sequence="10"
+              action="action_ai_chat_page"
+              groups="base.group_user"/>
+
+    <menuitem id="menu_ai_chat_conversations" name="查看对话"
+              parent="menu_ai_chat"
+              sequence="20"
               action="action_ai_conversation"
               groups="base.group_user"/>
 
     <!-- Configuration Submenu -->
-    <menuitem id="menu_ai_configuration" name="Configuration"
+    <menuitem id="menu_ai_configuration" name="配置"
               parent="menu_ai_core_root"
               sequence="90"
               groups="base.group_system"/>
 
-    <menuitem id="menu_ai_settings" name="Settings"
+        <menuitem id="menu_ai_settings" name="设置"
               parent="menu_ai_configuration"
               sequence="10"
               action="action_ai_config_settings"/>
+
+    <!-- Chat Page Action -->
+    <record id="action_ai_chat_page" model="ir.actions.act_url">
+        <field name="name">AI 智能聊天</field>
+        <field name="url">/ai/chat</field>
+        <field name="target">new</field>
+    </record>
 </odoo>

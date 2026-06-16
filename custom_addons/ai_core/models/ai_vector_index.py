@@ -13,39 +13,39 @@ class AiVectorIndex(models.Model):
     """Configuration and management of vector indexes for similarity search."""
 
     _name = 'ai.vector.index'
-    _description = 'AI Vector Index'
+    _description = 'AI向量索引'
     _order = 'name'
 
     # ---- Core Fields ----
-    name = fields.Char(string='Index Name', required=True)
-    description = fields.Text(string='Description')
-    active = fields.Boolean(string='Active', default=True)
+    name = fields.Char(string='索引名称', required=True)
+    description = fields.Text(string='描述')
+    active = fields.Boolean(string='启用', default=True)
 
     # ---- Index Configuration ----
     index_type = fields.Selection(
-        string='Index Type',
+        string='索引类型',
         selection=[
-            ('flat', 'Flat (Brute Force)'),
-            ('ivf', 'IVF (Inverted File)'),
-            ('hnsw', 'HNSW (Hierarchical NSW)'),
+            ('flat', '扁平(暴力搜索)'),
+            ('ivf', 'IVF(倒排文件)'),
+            ('hnsw', 'HNSW(分层可导航小世界)'),
         ],
         default='flat',
         required=True,
         help='Type of vector index. Flat = exact search, IVF/HNSW = approximate but faster.',
     )
     distance_metric = fields.Selection(
-        string='Distance Metric',
+        string='距离度量',
         selection=[
-            ('cosine', 'Cosine Similarity'),
-            ('l2', 'Euclidean (L2)'),
-            ('ip', 'Inner Product'),
+            ('cosine', '余弦相似度'),
+            ('l2', '欧几里得距离(L2)'),
+            ('ip', '内积'),
         ],
         default='cosine',
         required=True,
     )
-    dimensions = fields.Integer(string='Vector Dimensions', default=1536, required=True)
+    dimensions = fields.Integer(string='向量维度', default=1536, required=True)
     model_name = fields.Char(
-        string='Embedding Model',
+        string='嵌入模型',
         default='text-embedding-ada-002',
         help='The embedding model this index is compatible with',
     )
@@ -56,17 +56,17 @@ class AiVectorIndex(models.Model):
 
     # ---- Statistics ----
     document_count = fields.Integer(
-        string='Document Count',
+        string='文档数量',
         compute='_compute_statistics',
         store=True,
     )
     embedding_count = fields.Integer(
-        string='Embedding Count',
+        string='嵌入数量',
         compute='_compute_statistics',
         store=True,
     )
     total_chunks = fields.Integer(
-        string='Total Chunks',
+        string='总块数',
         compute='_compute_statistics',
         store=True,
     )

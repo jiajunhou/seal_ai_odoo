@@ -5,19 +5,19 @@
         <field name="name">ai.document.tree</field>
         <field name="model">ai.document</field>
         <field name="arch" type="xml">
-            <tree decoration-danger="state == 'error'" decoration-success="state == 'ready'" decoration-info="state == 'uploaded'">
-                <field name="name" string="Document Name"/>
-                <field name="document_type" widget="badge" decoration-info="1"/>
-                <field name="state" widget="badge" decoration-info="state in ('draft','uploaded')" decoration-success="state == 'ready'" decoration-warning="state in ('parsing','chunking','embedding')" decoration-danger="state == 'error'"/>
-                <field name="datas_fname" string="Filename" optional="show"/>
-                <field name="file_size" string="Size" widget="integer" optional="hide"/>
-                <field name="page_count" string="Pages" optional="hide"/>
-                <field name="word_count" string="Words" optional="hide"/>
-                <field name="chunk_count" string="Chunks" optional="show"/>
-                <field name="embedding_count" string="Embeddings" optional="show"/>
-                <field name="user_id" string="Uploaded By" optional="hide"/>
-                <field name="create_date" string="Created" optional="hide"/>
-            </tree>
+            <list decoration-danger="state == 'error'" decoration-success="state == 'ready'" decoration-info="state == 'uploaded'">
+                <field name="name" string="文档名称"/>
+                                <field name="document_type" decoration-info="document_type != False"/>
+                <field name="state" decoration-info="state in ('draft','uploaded')" decoration-success="state == 'ready'" decoration-warning="state in ('parsing','chunking','embedding')" decoration-danger="state == 'error'"/>
+                <field name="datas_fname" string="文件名" optional="show"/>
+                <field name="file_size" string="大小" optional="hide"/>
+                <field name="page_count" string="页数" optional="hide"/>
+                <field name="word_count" string="字数" optional="hide"/>
+                <field name="chunk_count" string="分块数" optional="show"/>
+                <field name="embedding_count" string="嵌入数" optional="show"/>
+                <field name="user_id" string="上传者" optional="hide"/>
+                <field name="create_date" string="创建时间" optional="hide"/>
+            </list>
         </field>
     </record>
 
@@ -29,34 +29,38 @@
             <form>
                 <header>
                     <field name="state" widget="statusbar" statusbar_visible="draft,uploaded,parsing,chunking,embedding,ready"/>
-                    <button name="action_process" string="Process" type="object"
-                            states="uploaded" class="btn-primary"
-                            confirm="Process this document? This will parse, chunk, and generate embeddings."/>
-                    <button name="action_reprocess" string="Reprocess" type="object"
-                            states="ready,error" class="btn-warning"/>
-                    <button name="action_reset" string="Reset" type="object"
-                            states="uploaded,parsed,chunked,ready,error" class="btn-secondary"/>
+                    <button name="action_process" string="处理" type="object"
+                            invisible="state != 'uploaded'" class="btn-primary"
+                            confirm="处理此文档？将进行解析、分块和生成嵌入向量。"/>
+                    <button name="action_reprocess" string="重新处理" type="object"
+                            invisible="state not in ('ready','error')" class="btn-warning"/>
+                    <button name="action_reset" string="重置" type="object"
+                            invisible="state == 'draft'" class="btn-secondary"/>
                 </header>
                 <sheet>
-                    <div class="oe_button_box" name="button_box">
-                        <button name="action_view_chunks" string="Chunks" type="object"
-                                class="oe_stat_button" icon="fa-file-text-o">
-                            <field name="chunk_count" widget="statinfo"/>
+                                        <div class="oe_button_box" name="button_box">
+                        <button name="action_view_chunks" string="分块数" type="object"
+                                class="o_stat_button" icon="fa-file-text-o">
+                            <div class="o_stat_info">
+                                <field name="chunk_count"/>
+                            </div>
                         </button>
-                        <button name="action_view_embeddings" string="Embeddings" type="object"
-                                class="oe_stat_button" icon="fa-database">
-                            <field name="embedding_count" widget="statinfo"/>
+                        <button name="action_view_embeddings" string="嵌入数" type="object"
+                                class="o_stat_button" icon="fa-database">
+                            <div class="o_stat_info">
+                                <field name="embedding_count"/>
+                            </div>
                         </button>
                     </div>
                     <div class="oe_title">
                         <h1>
-                            <field name="name" placeholder="Document Name"/>
+                            <field name="name" placeholder="文档名称"/>
                         </h1>
                         <group>
                             <group>
-                                <field name="document_type" widget="badge"/>
-                                <field name="state" widget="badge"/>
-                                <field name="datas_fname" string="Filename"/>
+                                                                <field name="document_type"/>
+                                <field name="state"/>
+                                <field name="datas_fname" string="文件名"/>
                             </group>
                             <group>
                                 <field name="user_id"/>
@@ -66,21 +70,17 @@
                     </div>
 
                     <notebook>
-                        <page name="file" string="File">
+                        <page name="file" string="文件">
                             <group name="file_info">
-                                <field name="datas" filename="datas_fname" string="File">
-                                    <tree>
-                                        <field name="datas_fname"/>
-                                    </tree>
-                                </field>
-                                <field name="file_size" string="Size"/>
+                                <field name="datas" filename="datas_fname" string="文件" widget="binary"/>
+                                <field name="file_size" string="大小"/>
                                 <field name="mime_type"/>
                                 <field name="file_extension"/>
                             </group>
                         </page>
 
-                        <page name="processing" string="Processing">
-                            <group name="config" string="Configuration">
+                        <page name="processing" string="处理">
+                            <group name="config" string="配置">
                                 <group>
                                     <field name="chunk_strategy"/>
                                     <field name="chunk_size"/>
@@ -92,7 +92,7 @@
                                     <field name="vector_index_id"/>
                                 </group>
                             </group>
-                            <group name="stats" string="Statistics" attrs="{'invisible': [('state', 'not in', ('ready','error'))]}">
+                                                        <group name="stats" string="统计" invisible="state not in ('ready','error')">
                                 <group>
                                     <field name="page_count"/>
                                     <field name="word_count"/>
@@ -101,16 +101,16 @@
                                 <group>
                                     <field name="chunk_count"/>
                                     <field name="embedding_count"/>
-                                    <field name="process_duration" string="Processing Time (s)"/>
+                                    <field name="process_duration"/>
                                     <field name="processed_date"/>
                                 </group>
                             </group>
-                            <group name="error" string="Error" attrs="{'invisible': [('state', '!=', 'error')]}">
+                            <group name="error" string="错误" invisible="state != 'error'">
                                 <field name="error_message" nolabel="1"/>
                             </group>
                         </page>
 
-                        <page name="content" string="Content">
+                        <page name="content" string="内容">
                             <field name="raw_text" nolabel="1" readonly="True"/>
                         </page>
                     </notebook>
@@ -128,11 +128,11 @@
         <field name="model">ai.document</field>
         <field name="arch" type="xml">
             <search>
-                <field name="name" string="Document Name"/>
-                <field name="datas_fname" string="Filename"/>
-                <field name="raw_text" string="Content"/>
+                <field name="name" string="文档名称"/>
+                <field name="datas_fname" string="文件名"/>
+                <field name="raw_text" string="内容"/>
                 <filter name="state_ready" string="Ready" domain="[('state','=','ready')]"/>
-                <filter name="state_error" string="Error" domain="[('state','=','error')]"/>
+                <filter name="state_error" string="错误" domain="[('state','=','error')]"/>
                 <filter name="state_uploaded" string="Uploaded" domain="[('state','=','uploaded')]"/>
                 <filter name="state_draft" string="Draft" domain="[('state','=','draft')]"/>
                 <separator/>
@@ -141,9 +141,9 @@
                 <filter name="type_txt" string="TXT" domain="[('document_type','=','txt')]"/>
                 <separator/>
                 <group expand="0" string="Group By">
-                    <filter name="group_type" string="Document Type" context="{'group_by': 'document_type'}"/>
+                    <filter name="group_type" string="文档类型" context="{'group_by': 'document_type'}"/>
                     <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
-                    <filter name="group_user" string="Uploaded By" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_user" string="上传者" context="{'group_by': 'user_id'}"/>
                 </group>
             </search>
         </field>
@@ -153,10 +153,10 @@
     <record id="action_ai_document" model="ir.actions.act_window">
         <field name="name">Documents</field>
         <field name="res_model">ai.document</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Upload your first document for AI processing.
+                上传您的第一个文档进行AI处理。
             </p>
             <p>
                 Upload PDF, DOCX, or TXT files to build a searchable knowledge base.

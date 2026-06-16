@@ -48,6 +48,20 @@ class AiChatService(models.AbstractModel):
     CONFIG_CHAT_BACKEND = 'ai_core.chat_backend'
     CONFIG_CHAT_ENDPOINT = 'ai_core.chat_endpoint'  # Custom endpoint for local models
 
+    # Preset endpoints for supported backends
+    PRESET_ENDPOINTS = {
+        'openai': 'https://api.openai.com/v1/chat/completions',
+        'deepseek': 'https://api.deepseek.com/v1/chat/completions',
+        'qwen': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
+    }
+
+    # Preset model suggestions for each backend
+    PRESET_MODELS = {
+        'openai': 'gpt-4o-mini',
+        'deepseek': 'deepseek-chat',
+        'qwen': 'qwen-plus',
+    }
+
     # ---- Main Chat API ----
 
     @api.model
@@ -136,7 +150,7 @@ class AiChatService(models.AbstractModel):
             })
 
         # 4. Conversation history (last 20 messages to stay within token limits)
-        history = conversation.message_ids.filtered(
+        history = conversation.chat_message_ids.filtered(
             lambda m: m.role in ('user', 'assistant')
         ).sorted(key=lambda m: m.id)
         for msg in history[-20:]:  # Last 20 messages
@@ -160,6 +174,8 @@ class AiChatService(models.AbstractModel):
 
         backends = {
             'openai': self._call_openai,
+            'deepseek': self._call_openai,
+            'qwen': self._call_openai,
             'openai_compatible': self._call_openai_compatible,
             'mock': self._call_mock,
         }
@@ -169,16 +185,21 @@ class AiChatService(models.AbstractModel):
 
     @api.model
     def _call_openai(self, messages, model, temperature, max_tokens):
-        """Call OpenAI Chat Completions API."""
+        """Call OpenAI Chat Completions API (also used for DeepSeek, Qwen)."""
         if not _HAS_REQUESTS:
             return self._call_mock(messages, model, temperature, max_tokens)
 
-        api_key = self._get_openai_api_key()
+        backend = self._get_backend()
+        api_key = self._get_api_key()
         if not api_key:
-            self.log_warning('OpenAI API key not configured. Using mock response.')
+            self.log_warning(f'{backend} API key not configured. Using mock response.')
             return self._call_mock(messages, model, temperature, max_tokens)
 
-        url = 'https://api.openai.com/v1/chat/completions'
+        url = self._get_endpoint()
+        if not url:
+            self.log_warning(f'No endpoint configured for {backend}. Using mock.')
+            return self._call_mock(messages, model, temperature, max_tokens)
+
         headers = {
             'Authorization': f'Bearer {api_key}',
             'Content-Type': 'application/json',
@@ -207,6 +228,7 @@ class AiChatService(models.AbstractModel):
                     'prompt_tokens': usage.get('prompt_tokens', 0),
                     'completion_tokens': usage.get('completion_tokens', 0),
                     'finish_reason': choice.get('finish_reason', ''),
+                    'backend': backend,
                 },
             }
 
@@ -216,10 +238,10 @@ class AiChatService(models.AbstractModel):
         except requests.exceptions.HTTPError as e:
             status = e.response.status_code if hasattr(e, 'response') else 0
             if status == 401:
-                raise UserError(_('Invalid OpenAI API key. Please check your configuration.'))
+                raise UserError(_('API密钥无效，请检查配置。'))
             elif status == 429:
-                raise UserError(_('Rate limit exceeded. Please wait and try again.'))
-            raise UserError(_('AI service error: %s') % str(e))
+                raise UserError(_('请求频率超限，请稍后重试。'))
+            raise UserError(_('AI服务错误: %s') % str(e))
         except Exception as e:
             self.log_error(f'OpenAI API error: {e}', exc_info=True)
             raise UserError(_('Failed to get AI response: %s') % str(e))
@@ -233,12 +255,12 @@ class AiChatService(models.AbstractModel):
         if not _HAS_REQUESTS:
             return self._call_mock(messages, model, temperature, max_tokens)
 
-        endpoint = self._get_custom_endpoint()
+        endpoint = self._get_endpoint()
         if not endpoint:
-            self.log_warning('Custom endpoint not configured. Using mock.')
+            self.log_warning('自定义端点未配置，使用模拟回复。')
             return self._call_mock(messages, model, temperature, max_tokens)
 
-        api_key = self._get_openai_api_key()
+        api_key = self._get_api_key()
 
         headers = {'Content-Type': 'application/json'}
         if api_key:
@@ -424,22 +446,35 @@ class AiChatService(models.AbstractModel):
         return param.get_param(self.CONFIG_CHAT_BACKEND, 'mock')
 
     @api.model
-    def _get_chat_model(self):
-        """Get configured chat model."""
-        param = self.env['ir.config_parameter'].sudo()
-        return param.get_param(self.CONFIG_OPENAI_CHAT_MODEL, 'gpt-4o-mini')
-
-    @api.model
-    def _get_openai_api_key(self):
-        """Get OpenAI API key."""
+    def _get_api_key(self):
+        """Get API key (works for OpenAI, DeepSeek, Qwen, or custom)."""
         param = self.env['ir.config_parameter'].sudo()
         return param.get_param(self.CONFIG_OPENAI_API_KEY, '')
 
     @api.model
-    def _get_custom_endpoint(self):
-        """Get custom API endpoint."""
+    def _get_endpoint(self):
+        """
+        Get the API endpoint for the current backend.
+        Returns preset endpoint for known backends, or custom endpoint.
+        """
+        backend = self._get_backend()
+        # Check if this backend has a preset endpoint
+        if backend in self.PRESET_ENDPOINTS:
+            return self.PRESET_ENDPOINTS[backend]
+        # Fall back to custom endpoint
         param = self.env['ir.config_parameter'].sudo()
         return param.get_param(self.CONFIG_CHAT_ENDPOINT, '')
+
+    @api.model
+    def _get_chat_model(self):
+        """Get configured chat model with backend-aware defaults."""
+        backend = self._get_backend()
+        param = self.env['ir.config_parameter'].sudo()
+        model = param.get_param(self.CONFIG_OPENAI_CHAT_MODEL, '')
+        if model:
+            return model
+        # Return backend-specific default
+        return self.PRESET_MODELS.get(backend, 'gpt-4o-mini')
 
     @api.model
     def _get_fallback_response(self, error_msg):
@@ -454,18 +489,25 @@ class AiChatService(models.AbstractModel):
     # ---- Configuration ----
 
     @api.model
-    def configure(self, backend='mock', api_key='', model='gpt-4o-mini', endpoint=''):
+    def configure(self, backend='mock', api_key='', model='', endpoint=''):
         """Configure the AI chat service."""
         param = self.env['ir.config_parameter'].sudo()
         param.set_param(self.CONFIG_CHAT_BACKEND, backend)
+
+        # Use preset model if none provided
+        if not model:
+            model = self.PRESET_MODELS.get(backend, 'gpt-4o-mini')
         param.set_param(self.CONFIG_OPENAI_CHAT_MODEL, model)
 
         if api_key:
             param.set_param(self.CONFIG_OPENAI_API_KEY, api_key)
         if endpoint:
             param.set_param(self.CONFIG_CHAT_ENDPOINT, endpoint)
+        elif backend in self.PRESET_ENDPOINTS:
+            # Save preset endpoint so it's explicit in config
+            param.set_param(self.CONFIG_CHAT_ENDPOINT, self.PRESET_ENDPOINTS[backend])
 
-        self.log_info(f'Configured chat backend: {backend}, model: {model}')
+        self.log_info(f'配置聊天后端: {backend}, 模型: {model}')
         return True
 
     @api.model
@@ -475,12 +517,12 @@ class AiChatService(models.AbstractModel):
         config_status = {
             'backend': backend,
             'model': self._get_chat_model(),
-            'api_key_configured': bool(self._get_openai_api_key()),
-            'custom_endpoint': self._get_custom_endpoint() or 'N/A',
+            'api_key_configured': bool(self._get_api_key()),
+            'endpoint': self._get_endpoint() or 'N/A',
             'status': 'ready' if backend == 'mock' else 'needs_configuration',
         }
 
-        if backend == 'openai':
+        if backend in ('openai', 'deepseek', 'qwen'):
             if config_status['api_key_configured']:
                 config_status['status'] = 'configured'
             else:

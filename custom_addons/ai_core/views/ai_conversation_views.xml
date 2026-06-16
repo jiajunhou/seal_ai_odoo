@@ -5,15 +5,15 @@
         <field name="name">ai.conversation.tree</field>
         <field name="model">ai.conversation</field>
         <field name="arch" type="xml">
-            <tree decoration-success="state == 'active'" decoration-muted="state == 'archived'">
-                <field name="name" string="Subject"/>
-                <field name="state" widget="badge" decoration-success="state == 'active'" decoration-muted="state == 'archived'"/>
+            <list decoration-success="state == 'active'" decoration-muted="state == 'archived'">
+                <field name="name" string="主题"/>
+                <field name="state" decoration-success="state == 'active'" decoration-muted="state == 'archived'"/>
                 <field name="model_name" string="Model"/>
-                <field name="message_count" string="Messages"/>
-                <field name="total_tokens_used" string="Tokens"/>
-                <field name="last_message_date" string="Last Message"/>
-                <field name="user_id" string="User" optional="hide"/>
-            </tree>
+                <field name="message_count" string="消息数"/>
+                <field name="total_tokens_used" string="Token数"/>
+                <field name="last_message_date" string="最后消息"/>
+                <field name="user_id" string="用户" optional="hide"/>
+            </list>
         </field>
     </record>
 
@@ -24,64 +24,64 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_archive" string="Archive" type="object" states="active"/>
-                    <button name="action_unarchive" string="Unarchive" type="object" states="archived"/>
-                    <button name="action_close" string="Close" type="object" states="active,archived"/>
-                    <button name="action_clear_messages" string="Clear Messages" type="object"
+                    <button name="action_archive" string="归档" type="object" invisible="state != 'active'"/>
+                    <button name="action_unarchive" string="取消归档" type="object" invisible="state != 'archived'"/>
+                    <button name="action_close" string="关闭" type="object" invisible="state not in ('active','archived')"/>
+                    <button name="action_clear_messages" string="清空消息" type="object"
                             confirm="Delete all messages in this conversation?"/>
                 </header>
                 <sheet>
                     <div class="oe_title">
-                        <h1><field name="name" placeholder="Conversation Subject"/></h1>
+                        <h1><field name="name" placeholder="对话主题"/></h1>
                     </div>
                     <group>
                         <group>
-                            <field name="state" widget="badge"/>
+                            <field name="state" decoration-success="state == 'active'" decoration-muted="state == 'archived'"/>
                             <field name="user_id"/>
                             <field name="model_name"/>
                         </group>
                         <group>
                             <field name="temperature" widget="float"/>
                             <field name="max_tokens"/>
-                            <field name="message_count" string="Total Messages"/>
-                            <field name="total_tokens_used" string="Tokens Used"/>
+                            <field name="message_count" string="总消息数"/>
+                            <field name="total_tokens_used" string="已用Token数"/>
                         </group>
                     </group>
 
                     <notebook>
-                        <page name="context" string="Context Settings">
-                            <group name="rag_settings" string="RAG Settings">
+                        <page name="context" string="上下文设置">
+                            <group name="rag_settings" string="RAG设置">
                                 <field name="use_rag"/>
                                 <field name="use_crm_context"/>
                                 <field name="top_k_chunks"/>
                                 <field name="similarity_threshold"/>
                             </group>
-                            <group name="crm_context" string="CRM Context">
+                            <group name="crm_context" string="CRM上下文">
                                 <field name="partner_ids" widget="many2many_tags"/>
                                 <field name="sale_order_ids" widget="many2many_tags"/>
                             </group>
-                            <group name="knowledge" string="Knowledge Base">
+                            <group name="knowledge" string="知识库">
                                 <field name="document_ids" widget="many2many_tags"/>
                             </group>
                         </page>
 
-                        <page name="system" string="System Prompt">
+                        <page name="system" string="系统提示词">
                             <field name="system_prompt" nolabel="1"/>
                         </page>
 
-                        <page name="messages" string="Messages">
-                            <field name="message_ids" nolabel="1">
-                                <tree>
-                                    <field name="role" widget="badge" decoration-primary="role == 'user'"
+                                                <page name="messages" string="消息数">
+                            <field name="chat_message_ids" nolabel="1">
+                                <list>
+                                                                        <field name="role" decoration-primary="role == 'user'"
                                            decoration-success="role == 'assistant'" decoration-info="role == 'system'"/>
-                                    <field name="content" string="Message"/>
+                                    <field name="content" string="消息"/>
                                     <field name="model_name" string="Model"/>
-                                    <field name="tokens_used" string="Tokens"/>
-                                    <field name="response_time_ms" string="Time (ms)"/>
-                                    <field name="rag_context_used" widget="boolean_fa"/>
-                                    <field name="crm_context_used" widget="boolean_fa"/>
-                                    <field name="create_date" string="Time"/>
-                                </tree>
+                                    <field name="tokens_used" string="Token数"/>
+                                    <field name="response_time_ms" string="时间(毫秒)"/>
+                                                                        <field name="rag_context_used" class="o_boolean_toggle"/>
+                                    <field name="crm_context_used" class="o_boolean_toggle"/>
+                                    <field name="create_date" string="时间"/>
+                                </list>
                             </field>
                         </page>
                     </notebook>
@@ -106,53 +106,20 @@
                 <group expand="0" string="Group By">
                     <filter name="group_state" string="State" context="{'group_by': 'state'}"/>
                     <filter name="group_model" string="Model" context="{'group_by': 'model_name'}"/>
-                    <filter name="group_user" string="User" context="{'group_by': 'user_id'}"/>
+                    <filter name="group_user" string="用户" context="{'group_by': 'user_id'}"/>
                 </group>
             </search>
         </field>
     </record>
 
-    <!-- Chat Widget View (embedded in form) -->
-    <record id="view_ai_conversation_chat_widget" model="ir.ui.view">
-        <field name="name">ai.conversation.chat.widget</field>
-        <field name="model">ai.conversation</field>
-        <field name="arch" type="xml">
-            <form>
-                <sheet>
-                    <div class="oe_title">
-                        <h1><field name="name"/></h1>
-                    </div>
-                    <group>
-                        <field name="model_name"/>
-                        <field name="temperature"/>
-                    </group>
-                    <div class="ai-chat-container">
-                        <div class="ai-chat-messages">
-                            <field name="message_ids" nolabel="1">
-                                <tree>
-                                    <field name="role"/>
-                                    <field name="content"/>
-                                </tree>
-                            </field>
-                        </div>
-                        <div class="ai-chat-input">
-                            <input type="text" placeholder="Type your message here..."/>
-                            <button string="Send" type="object" name="action_send_message"/>
-                        </div>
-                    </div>
-                </sheet>
-            </form>
-        </field>
-    </record>
-
     <!-- Action -->
     <record id="action_ai_conversation" model="ir.actions.act_window">
-        <field name="name">AI Chat Conversations</field>
+        <field name="name">AI聊天对话</field>
         <field name="res_model">ai.conversation</field>
-        <field name="view_mode">tree,form</field>
+        <field name="view_mode">list,form</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
-                Start a new AI-powered conversation.
+                开始一个新的AI驱动对话。
             </p>
             <p>
                 Use AI chat to ask questions about your CRM data and knowledge base documents.

@@ -15,15 +15,15 @@ class AiDocument(models.Model):
     """Represents an uploaded document (PDF, DOCX, TXT) for AI processing."""
 
     _name = 'ai.document'
-    _description = 'AI Document'
+    _description = 'AI文档'
     _inherit = ['mail.thread', 'mail.activity.mixin']
     _order = 'write_date DESC'
 
     # ---- Core Fields ----
-    name = fields.Char(string='Document Name', required=True, tracking=True)
-    description = fields.Text(string='Description')
+    name = fields.Char(string='文档名称', required=True, tracking=True)
+    description = fields.Text(string='描述')
     document_type = fields.Selection(
-        string='Document Type',
+        string='文档类型',
         selection=[
             ('pdf', 'PDF'),
             ('docx', 'DOCX'),
@@ -31,24 +31,24 @@ class AiDocument(models.Model):
             ('html', 'HTML'),
             ('markdown', 'Markdown'),
             ('csv', 'CSV'),
-            ('other', 'Other'),
+            ('other', '其他'),
         ],
         required=True,
         default='pdf',
         tracking=True,
     )
     state = fields.Selection(
-        string='Status',
+        string='状态',
         selection=[
-            ('draft', 'Draft'),
-            ('uploaded', 'Uploaded'),
-            ('parsing', 'Parsing'),
-            ('parsed', 'Parsed'),
-            ('chunking', 'Chunking'),
-            ('chunked', 'Chunked'),
-            ('embedding', 'Embedding'),
-            ('ready', 'Ready'),
-            ('error', 'Error'),
+            ('draft', '草稿'),
+            ('uploaded', '已上传'),
+            ('parsing', '解析中'),
+            ('parsed', '已解析'),
+            ('chunking', '分块中'),
+            ('chunked', '已分块'),
+            ('embedding', '嵌入中'),
+            ('ready', '就绪'),
+            ('error', '错误'),
         ],
         default='draft',
         required=True,
@@ -56,49 +56,49 @@ class AiDocument(models.Model):
     )
 
     # ---- File Fields ----
-    datas = fields.Binary(string='File Content', attachment=True)
-    datas_fname = fields.Char(string='Filename')
-    file_size = fields.Integer(string='File Size (Bytes)', compute='_compute_file_size', store=True)
-    file_extension = fields.Char(string='File Extension', compute='_compute_file_extension', store=True)
-    mime_type = fields.Char(string='MIME Type')
+    datas = fields.Binary(string='文件内容', attachment=True)
+    datas_fname = fields.Char(string='文件名')
+    file_size = fields.Integer(string='文件大小(字节)', compute='_compute_file_size', store=True)
+    file_extension = fields.Char(string='文件扩展名', compute='_compute_file_extension', store=True)
+    mime_type = fields.Char(string='MIME类型')
 
     # ---- Parsed Content ----
-    raw_text = fields.Text(string='Raw Text', readonly=True)
-    parsed_content = fields.Html(string='Parsed Content', readonly=True)
-    page_count = fields.Integer(string='Page Count', default=0)
-    word_count = fields.Integer(string='Word Count', compute='_compute_word_count', store=True)
-    character_count = fields.Integer(string='Character Count', compute='_compute_character_count', store=True)
+    raw_text = fields.Text(string='原始文本', readonly=True)
+    parsed_content = fields.Html(string='解析内容', readonly=True)
+    page_count = fields.Integer(string='页数', default=0)
+    word_count = fields.Integer(string='字数', compute='_compute_word_count', store=True)
+    character_count = fields.Integer(string='字符数', compute='_compute_character_count', store=True)
 
     # ---- Processing Config ----
     chunk_strategy = fields.Selection(
-        string='Chunk Strategy',
+        string='分块策略',
         selection=[
-            ('recursive', 'Recursive Split'),
-            ('token', 'Token-based'),
-            ('semantic', 'Semantic (by paragraph)'),
-            ('fixed', 'Fixed Size'),
+            ('recursive', '递归分割'),
+            ('token', '基于Token'),
+            ('semantic', '语义分割(按段落)'),
+            ('fixed', '固定大小'),
         ],
         default='recursive',
         required=True,
     )
-    chunk_size = fields.Integer(string='Chunk Size', default=512, help='Target size for each chunk (tokens or chars)')
-    chunk_overlap = fields.Integer(string='Chunk Overlap', default=50, help='Overlap between consecutive chunks')
-    embedding_model = fields.Char(string='Embedding Model', default='text-embedding-ada-002')
-    embedding_dimensions = fields.Integer(string='Embedding Dimensions', default=1536)
+    chunk_size = fields.Integer(string='分块大小', default=512, help='Target size for each chunk (tokens or chars)')
+    chunk_overlap = fields.Integer(string='分块重叠', default=50, help='Overlap between consecutive chunks')
+    embedding_model = fields.Char(string='嵌入模型', default='text-embedding-ada-002')
+    embedding_dimensions = fields.Integer(string='嵌入维度', default=1536)
 
     # ---- Relations ----
-    chunk_ids = fields.One2many('ai.chunk', 'document_id', string='Chunks')
-    embedding_ids = fields.One2many('ai.embedding', 'document_id', string='Embeddings')
-    vector_index_id = fields.Many2one('ai.vector.index', string='Vector Index', ondelete='set null')
-    user_id = fields.Many2one('res.users', string='Uploaded By', default=lambda self: self.env.user, required=True)
-    company_id = fields.Many2one('res.company', string='Company', default=lambda self: self.env.company)
+    chunk_ids = fields.One2many('ai.chunk', 'document_id', string='文档块')
+    embedding_ids = fields.One2many('ai.embedding', 'document_id', string='嵌入向量')
+    vector_index_id = fields.Many2one('ai.vector.index', string='向量索引', ondelete='set null')
+    user_id = fields.Many2one('res.users', string='上传者', default=lambda self: self.env.user, required=True)
+    company_id = fields.Many2one('res.company', string='公司', default=lambda self: self.env.company)
 
     # ---- Statistics ----
-    chunk_count = fields.Integer(string='Chunk Count', compute='_compute_chunk_count', store=True)
-    embedding_count = fields.Integer(string='Embedding Count', compute='_compute_embedding_count', store=True)
-    process_duration = fields.Float(string='Processing Duration (s)', help='Total processing time in seconds')
-    error_message = fields.Text(string='Error Message', readonly=True)
-    processed_date = fields.Datetime(string='Processed Date', readonly=True)
+    chunk_count = fields.Integer(string='分块数', compute='_compute_chunk_count', store=True)
+    embedding_count = fields.Integer(string='嵌入数', compute='_compute_embedding_count', store=True)
+    process_duration = fields.Float(string='处理耗时(秒)', help='Total processing time in seconds')
+    error_message = fields.Text(string='错误信息', readonly=True)
+    processed_date = fields.Datetime(string='处理日期', readonly=True)
 
     # ---- Computed Methods ----
 

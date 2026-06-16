@@ -349,7 +349,7 @@ class AiChatController(http.Controller):
 
             result = []
             for conv in conversations:
-                last_msg = conv.message_ids.filtered(
+                last_msg = conv.chat_message_ids.filtered(
                     lambda m: m.role == 'assistant'
                 ).sorted(key=lambda m: m.id)[-1:] if conv.message_ids else []
 
@@ -399,7 +399,7 @@ class AiChatController(http.Controller):
                 )
 
             messages = []
-            for msg in conversation.message_ids:
+            for msg in conversation.chat_message_ids:
                 messages.append({
                     'id': msg.id,
                     'role': msg.role,

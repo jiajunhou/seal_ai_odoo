@@ -17,15 +17,15 @@ class AiChunk(models.Model):
 
     # ---- Core Fields ----
     name = fields.Char(string='Chunk Name', compute='_compute_name', store=True)
-    sequence = fields.Integer(string='Sequence', default=0, required=True)
-    content = fields.Text(string='Content', required=True)
+    sequence = fields.Integer(string='序号', default=0, required=True)
+    content = fields.Text(string='内容', required=True)
     content_length = fields.Integer(string='Content Length', compute='_compute_content_length', store=True)
     token_count = fields.Integer(string='Token Count (est.)', compute='_compute_token_count', store=True)
 
     # ---- Source ----
     document_id = fields.Many2one(
         'ai.document',
-        string='Document',
+        string='文档',
         required=True,
         ondelete='cascade',
         index=True,
@@ -45,7 +45,7 @@ class AiChunk(models.Model):
 
     # ---- Embedding Relation ----
     embedding_ids = fields.One2many('ai.embedding', 'chunk_id', string='Embeddings')
-    has_embedding = fields.Boolean(string='Has Embedding', compute='_compute_has_embedding', store=True)
+    has_embedding = fields.Boolean(string='已嵌入', compute='_compute_has_embedding', store=True)
 
     # ---- Metadata ----
     chunk_strategy = fields.Selection(

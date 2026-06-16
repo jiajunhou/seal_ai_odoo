@@ -28,6 +28,7 @@ class AiBaseService(models.AbstractModel):
 
     # Services should be transient; not stored in database
     _transient = True
+    _log_access = True  # REQUIRED by Odoo 18 for all TransientModels
 
     name = fields.Char(string='Service Name', default=lambda self: self._name)
 

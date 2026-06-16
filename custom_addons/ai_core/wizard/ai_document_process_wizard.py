@@ -1,60 +1,56 @@
 # -*- coding: utf-8 -*-
 # Part of Odoo. See LICENSE file for full copyright and licensing details.
 
+"""
+Service Registry for the AI Core module.
+
+Provides a centralized registry for all AI services.
+Services are implemented as Odoo models (AbstractModel) so they have
+access to the Odoo ORM, environment, and all model methods.
+
+Architecture:
+- Each service extends the base 'ai.base.service' abstract model
+- Services are resolved via the Odoo registry (self.env[service_name])
+- All services follow single-responsibility principle
+"""
+
 import logging
 from odoo import api, fields, models, _
 
 _logger = logging.getLogger(__name__)
 
 
-class AiDocumentProcessWizard(models.TransientModel):
-    """Wizard to configure and trigger document processing."""
+class AiBaseService(models.AbstractModel):
+    """Abstract base class for all AI services."""
 
-    _name = 'ai.document.process.wizard'
-    _description = 'Document Processing Wizard'
+    _name = 'ai.base.service'
+    _description = 'AI Base Service'
 
-    # ---- Document Selection ----
-    document_ids = fields.Many2many(
-        'ai.document',
-        string='Documents to Process',
-        required=True,
-    )
+    # Services should be transient; not stored in database
+    _transient = True
+    _log_access = True  # Required by Odoo 18 for TransientModels
 
-    # ---- Processing Options ----
-    chunk_strategy = fields.Selection(
-        string='Chunk Strategy',
-        selection=[
-            ('recursive', 'Recursive Split'),
-            ('token', 'Token-based'),
-            ('semantic', 'Semantic (by paragraph)'),
-            ('fixed', 'Fixed Size'),
-        ],
-        default='recursive',
-        required=True,
-    )
-    chunk_size = fields.Integer(string='Chunk Size', default=512)
-    chunk_overlap = fields.Integer(string='Chunk Overlap', default=50)
-    embedding_model = fields.Char(string='Embedding Model', default='text-embedding-ada-002')
+    name = fields.Char(string='Service Name', default=lambda self: self._name)
 
-    def action_process(self):
-        """Process all selected documents with configured parameters."""
-        documents = self.document_ids
-        if not documents:
-            return {'type': 'ir.actions.act_window_close'}
+    @api.model
+    def get_service_name(self):
+        """Return the service identifier."""
+        return self._name
 
-        for doc in documents:
-            doc.write({
-                'chunk_strategy': self.chunk_strategy,
-                'chunk_size': self.chunk_size,
-                'chunk_overlap': self.chunk_overlap,
-                'embedding_model': self.embedding_model,
-            })
-            doc.action_process()
+    @api.model
+    def log_info(self, message):
+        """Log an info message with service context."""
+        _logger.info('[%s] %s', self._name, message)
+        return True
 
-        return {
-            'type': 'ir.actions.act_window',
-            'name': _('Documents'),
-            'res_model': 'ai.document',
-            'view_mode': 'tree,form',
-            'domain': [('id', 'in', documents.ids)],
-        }
+    @api.model
+    def log_error(self, message, exc_info=False):
+        """Log an error with service context."""
+        _logger.error('[%s] %s', self._name, message, exc_info=exc_info)
+        return True
+
+    @api.model
+    def log_warning(self, message):
+        """Log a warning with service context."""
+        _logger.warning('[%s] %s', self._name, message)
+        return True
